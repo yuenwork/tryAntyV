@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,height=device-height">
+    <title>多条折线图</title>
+    <style>::-webkit-scrollbar{display:none;}html,body{overflow:hidden;height:100%;margin:0;}</style>
+</head>
+<body>
+<div id="mountNode"></div>
+<script>/*Fixing iframe window.innerHeight 0 issue in Safari*/document.body.clientHeight;</script>
+<script src="https://gw.alipayobjects.com/os/antv/pkg/_antv.g2-3.2.4/dist/g2.min.js"></script>
+<script src="https://gw.alipayobjects.com/os/antv/pkg/_antv.data-set-0.8.9/dist/data-set.min.js"></script>
+<script src="socket.io.js"></script>
+<script src="jquery.js"></script>
+<script>
+var data = [{
+  time: '0',
+  FreeMem: 0,
+  load: 0
+}];
+var ds = new DataSet();
+var dv = ds.createView().source(data);
+dv.transform({
+  type: 'fold',
+  fields: ['FreeMem', 'load'], // 展开字段集
+  key: 'city', // key字段
+  value: 'percent' // value字段
+});
+var chart = new G2.Chart({
+  container: 'mountNode',
+  forceFit: true,
+  height: window.innerHeight
+});
+chart.source(dv, {
+  time: {
+    range: [0, 1]
+  }
+});
+chart.tooltip({
+  crosshairs: {
+    type: 'line'
+  }
+});
+chart.axis('percent', {
+  label: {
+    formatter: function formatter(val) {
+      return val + ' %';
+    }
+  }
+});
+chart.line().position('time*percent').color('city');
+chart.point().position('time*percent').color('city').size(6).shape('circle').style({
+  stroke: '#fff',
+  lineWidth: 1
+});
+chart.render();
+
+$(function () {
+        var socket = io();
+        socket.on('chat message', function(msg){
+          data.push(msg)
+          if (data.length>20){
+            data.shift()
+          }
+          dv.source(data)
+          chart.repaint();
+        });
+      });
+
+
+
+</script>
+</body>
+</html>
